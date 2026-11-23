@@ -3,6 +3,25 @@ Go-based, single-node IP address management with an embedded web interface and S
 
 **0.1.0 is an evaluation build, not a production-certified release.** The SAML dependency is flagged by [GO-2026-6909](https://pkg.go.dev/vuln/GO-2026-6909), with no fixed version listed. Keep SAML disabled in production; local login, OIDC and LDAPS are alternatives. The vulnerability CI job intentionally fails rather than suppressing this advisory. Source inspection and a namespace regression test do not constitute advisory clearance.
 
+## Contents
+- [Features](#implemented-capabilities)
+- [Requirements](#requirements)
+- [Run from source](#run-locally)
+- [Deployment packages](#deployment-packages)
+  - [Linux/systemd](#linuxsystemd)
+  - [Windows](#windows)
+  - [TLS and remote access](#tls-and-network-access)
+- [Usage guide](#usage-guide)
+- [Inventory and imports](#inventory-and-imports)
+- [Identity and RBAC](#identity-and-rbac)
+- [DNS, DHCP and AD connector](#dns-dhcp-and-ad-connector)
+- [Discovery](#discovery)
+- [Audit and SIEM](#audit-and-siem)
+- [Backup, restore and upgrades](#backup-restore-and-upgrades)
+- [Troubleshooting](#troubleshooting)
+- [Development validation](#development-validation)
+- [Remaining release work](#remaining-release-work)
+
 ## Implemented capabilities
 - Subnet/address CRUD, VRFs, sites, VLANs, IPv4 grids, sparse IPv6, optimistic concurrency and overlap validation.
 - Separate inventory allocation, ping reachability and linked DHCP observations. Unknown is not free; stale DHCP data never silently becomes available.
@@ -13,15 +32,37 @@ Go-based, single-node IP address management with an embedded web interface and S
 - CSV/JSON subnet import preview and atomic create-only apply, scoped JSON inventory export, encrypted backups and offline staged restore.
 - Structured operational logs, application audit trail, durable HTTPS/Splunk HEC/TLS-syslog delivery with retries.
 
+## Requirements
+- **Packaged application:** Linux amd64/arm64 or Windows amd64, local writable storage, and a modern web browser. Go is not required to run a prebuilt package.
+- **Service installation:** systemd and administrative access on Linux; an elevated PowerShell session on Windows. Run the installed web service as its unprivileged service account, not as root or LocalSystem.
+- **Source builds:** Git and Go 1.26.11 or newer. Browser tests additionally download Chromium; this is not an application runtime requirement.
+- **Optional integrations:** OS `ping` for scanning; configured IdP/directory and trusted certificates for external login; reachable DNS/DHCP APIs or the Windows connector for provider management; SNMPv3-capable devices for LLDP/CDP collection.
+- **Windows connector:** a management domain member with Windows PowerShell, the relevant DNS/DHCP/AD management modules, and a delegated service identity.
+
+No Node.js, external database server, Docker, or cloud account is required for a local installation. Deployment is single-node; capacity and high-availability operation are not certified.
+
 ## Run locally
-From source, use Go 1.26.11 or newer:
+Clone the repository, then build and bootstrap from its root directory. On Linux:
 
 ```sh
+git clone https://github.com/mumbles27/MIPAM.git
+cd MIPAM
 go build -o dist/mipam ./cmd/mipam
 cp config.example.json mipam.json
 ./dist/mipam -config mipam.json bootstrap
 ./dist/mipam -config mipam.json serve
 ```
+
+For a Windows source checkout, run from the repository root in PowerShell:
+
+```powershell
+go build -o dist/mipam.exe ./cmd/mipam
+Copy-Item config.example.json mipam.json
+.\dist\mipam.exe -config mipam.json bootstrap
+.\dist\mipam.exe -config mipam.json serve
+```
+
+Copy the example configuration only for a new installation; do not overwrite an existing `mipam.json`. These source commands build the checked-out branch. Use the tagged packages below for the fixed 0.1.0 evaluation build.
 
 Open **http://127.0.0.1:8080** and sign in as `admin` with the password entered at bootstrap. The password prompt is hidden; there is no default password. Passwords must be 14–72 bytes. For automation, inject `MIPAM_BOOTSTRAP_PASSWORD` using your secret manager and remove it afterward. Do not put passwords in command arguments or source files.
 
@@ -30,7 +71,15 @@ For an extracted binary package, use `./mipam` (Linux) or `.\mipam.exe` (Windows
 Only one process may open a database. Stop the service before CLI bootstrap or backup; the web backup action works while the service is running. Keep SQLite on local storage, not NFS/SMB. Do not run multiple replicas against it.
 
 ## Deployment packages
-From the repository root:
+Download the matching archive and `SHA256SUMS` from the [v0.1.0 package directory](https://github.com/mumbles27/MIPAM/tree/v0.1.0/dist/release):
+- [Linux amd64 archive](https://github.com/mumbles27/MIPAM/raw/refs/tags/v0.1.0/dist/release/mipam-0.1.0-linux-amd64.tar.gz)
+- [Linux arm64 archive](https://github.com/mumbles27/MIPAM/raw/refs/tags/v0.1.0/dist/release/mipam-0.1.0-linux-arm64.tar.gz)
+- [Windows amd64 archive](https://github.com/mumbles27/MIPAM/raw/refs/tags/v0.1.0/dist/release/mipam-0.1.0-windows-amd64.zip)
+- [SHA256SUMS](https://github.com/mumbles27/MIPAM/raw/refs/tags/v0.1.0/dist/release/SHA256SUMS)
+
+These are committed package files attached to the Git tag's tree; a GitHub Releases page is not required. This README may receive documentation improvements after the tag; the archived documentation remains the original release copy.
+
+To build new packages yourself, run from the repository root:
 
 ```sh
 go run ./tools/package
@@ -47,6 +96,24 @@ Each archive includes configuration examples, install/uninstall scripts, a CSV t
 ### Linux/systemd
 Verify the downloaded checksum against a trusted copy, extract the correct architecture archive, then run `sudo bash install.sh` from the extracted directory. The installer creates an unprivileged `mipam` account, prompts for the initial administrator password, and leaves the service stopped for review.
 
+Example for amd64, with the archive and checksum file in the current directory:
+
+```sh
+sha256sum --check --ignore-missing SHA256SUMS
+# Continue only if verification succeeds.
+tar -xzf mipam-0.1.0-linux-amd64.tar.gz
+cd mipam-0.1.0-linux-amd64
+sudo bash install.sh
+```
+
+For ARM64, substitute `arm64` in both archive and directory names. Review `/etc/mipam/mipam.json` and escrow the backup key before starting:
+
+```sh
+sudo systemctl enable --now mipam
+systemctl status mipam --no-pager
+curl --fail http://127.0.0.1:8080/readyz
+```
+
 Paths:
 - Binary: `/opt/mipam/mipam`
 - Configuration: `/etc/mipam/mipam.json`
@@ -58,13 +125,36 @@ After reviewing configuration: `sudo systemctl enable --now mipam`. Logs: `journ
 Ping scanning requires the OS `ping` utility. With `NoNewPrivileges=true`, use kernel unprivileged ping sockets and configure `net.ipv4.ping_group_range` for the service group if required by your distribution; do not run the web service as root to make ping work.
 
 ### Windows
-Extract the ZIP to a local folder and run `.\Install.ps1` in an elevated PowerShell session after reviewing the script. Follow your organization's script-signing policy; no execution-policy bypass is required or recommended. Defaults:
+With the ZIP and `SHA256SUMS` in the current directory, verify the hash before extracting:
+
+```powershell
+$Archive = 'mipam-0.1.0-windows-amd64.zip'
+$ChecksumLine = Get-Content .\SHA256SUMS | Where-Object { $_.EndsWith("  $Archive") }
+if (@($ChecksumLine).Count -ne 1) { throw 'Expected exactly one checksum entry.' }
+$Expected = ($ChecksumLine -split '\s+')[0]
+if ((Get-FileHash $Archive -Algorithm SHA256).Hash -ne $Expected) {
+    throw 'Checksum mismatch. Do not install this archive.'
+}
+Expand-Archive -Path $Archive -DestinationPath .\mipam-extracted
+Set-Location .\mipam-extracted\mipam-0.1.0-windows-amd64
+```
+
+Review the extracted scripts, then run `.\Install.ps1` from that directory in an elevated PowerShell session. Follow your organization's script-signing policy; no execution-policy bypass is required or recommended. Defaults:
 - Binary: `%ProgramFiles%\MIPAM\mipam.exe`
 - Configuration: `%ProgramData%\MIPAM\mipam.json`
 - State: `%ProgramData%\MIPAM\data`
 - Service: `MIPAM`, running as `NT AUTHORITY\LocalService`
 
 The installer secures the state directory with Windows ACLs, prompts for bootstrap, and leaves the service stopped. After review, use `Set-Service MIPAM -StartupType Automatic; Start-Service MIPAM`. `.\Uninstall.ps1` removes the service only and preserves data. Installer execution and real Windows service operation still require native acceptance testing; cross-compilation is not proof of runtime compatibility.
+
+Once configuration and backup-key escrow are complete:
+
+```powershell
+Set-Service MIPAM -StartupType Automatic
+Start-Service MIPAM
+Get-Service MIPAM
+Invoke-RestMethod http://127.0.0.1:8080/readyz
+```
 
 Inject environment secrets into the service environment through your approved provisioning mechanism; interactive-shell variables are not automatically inherited by SCM services. Restrict registry/config/key access to administrators and the service identity. The Windows installer sets `log_file` to the protected data directory's `mipam.log`; console stderr logging remains enabled. Arrange external retention/rotation and restart after moving the file.
 
@@ -77,6 +167,43 @@ The default listener is loopback only. For remote access:
 - Trust private CA roots through the OS trust store; provider connections additionally support `ca_file`. TLS verification is never disabled.
 
 `/healthz` reports HTTP liveness and `/readyz` tests database connectivity. They do not certify upstream IdP, DNS, DHCP, SNMP or SIEM health. Behind a proxy, client login throttling currently sees the proxy address, not an untrusted forwarded header.
+
+## Usage guide
+### 1. Sign in and create your first subnet
+1. Open `http://127.0.0.1:8080` on the server, or your configured HTTPS URL from an authorized client.
+2. Select **Local account** and sign in with the bootstrap administrator. Configured external authentication methods appear on the login page.
+3. Open **Subnets & addresses** and select **+ Create subnet**.
+4. Enter a name, CIDR (for example `192.0.2.0/24`), site (`HQ`), optional routing domain/VRF and VLAN. The example CIDR is documentation-only; use your actual authorized network.
+5. Select **Save subnet**. This creates MIPAM inventory only, not a DHCP scope.
+
+### 2. Manage addresses and check reachability
+- Select a subnet, click an address cell, enter hostname/MAC/notes, choose **Inventory allocation**, and select **Save inventory**.
+- Use **Available (manually confirmed)** only when you have verified availability. A ping timeout does not prove an address is unused.
+- Use **Start address**, **Go**, and **Next page** to navigate larger IPv4 networks. IPv6 inventory is sparse; use **Add address** to record a specific address.
+- To scan an authorized network, edit its subnet and enable **Allow explicit ping scans**, save, then select **Ping scan**. Monitor the result under **Activity & jobs**.
+- If an edit reports a version conflict, refresh and inspect the current record before retrying; do not assume another user's change is safe to overwrite.
+
+### 3. Import subnets or read DHCP state
+- Under **Import & export**, select a CSV/JSON file or paste data, select **Validate & preview**, inspect the result, then **Apply import**.
+- To onboard a configured provider scope, open **DNS & DHCP**, choose the provider and **DHCP scope**, select **Read / synchronize**, supply the required identifier, then **Read or preview change**. Use **Prepare scope import** when candidates are returned.
+- To overlay observed DHCP state on the grid, choose **DHCP leases (read)** or **DHCP reservation**, supply the scope/subnet identifier, and choose **Link DHCP reads to inventory subnet** before reading.
+- Linked observations can show reserved, leased, stale or conflicting state without replacing manually managed inventory. Refresh them explicitly; no automatic polling is implied.
+
+### 4. Make controlled DNS/DHCP changes
+1. Configure a provider server-side and validate read-only access first. Enable write access only after reviewing its capability boundaries.
+2. Open **DNS & DHCP**, select the resource and action, and fill in its fields.
+3. Select **Read or preview change**. Review the before-state and proposed operation.
+4. Select **Confirm external change** and review its confirmation prompt to queue the operation.
+5. Inspect **Activity & jobs** and **Audit log** for the outcome. If a change fails or times out, reconcile with the external server before submitting another mutation.
+
+Inventory edits and provider edits are separate operations. Deleting a subnet from MIPAM does not remove an external DHCP scope, and restoring a backup does not undo provider changes.
+
+### 5. Delegate access and protect your data
+- In **Administration → Users & scoped roles**, create a local user, choose a role and specify comma-separated allowed sites. Non-admin users without matching site grants cannot access those sites.
+- Use **Administration → Create encrypted backup** for an online backup. Keep the encryption key separately, and test the offline restore procedure.
+- Use **Import & export → Export inventory JSON** for a scoped inventory download; it is not a replacement for a full backup.
+- Administrators can collect configured device neighbors under **Network discovery** and inspect global events under **Audit log**.
+- Sign out when finished. Keep a protected local administrator available for external IdP outages.
 
 ## Inventory and imports
 Create a subnet from **Subnets & addresses**, including its site, VRF and optional VLAN. Click a grid cell to edit an address. New addresses default to unknown; explicitly mark available only according to your allocation policy. Deleting an inventory object does not delete external DNS/DHCP resources.
@@ -99,9 +226,9 @@ Administrators have global access. Operators can modify granted sites; viewers a
 ## DNS, DHCP and AD connector
 All provider writes default off. To enable them, set the provider's `allow_writes` and, for Windows, the connector's `allow_writes`. Use a read-only integration first.
 
-The web provider editor accepts typed JSON requests. Read, inspect the result, preview a proposed write, then explicitly confirm its job ID. Preview expires after 10 minutes. Workers recheck user/provider permission and before-state before execution. These checks reduce stale writes but cannot provide atomic transactions across independent network servers. A timeout can mean an uncertain external outcome: inspect the server before retrying. Interrupted running jobs are not blindly replayed.
+The web provider form sends typed JSON requests to the API. Read, inspect the result, preview a proposed write, then explicitly confirm its job ID. Preview expires after 10 minutes. Workers recheck user/provider permission and before-state before execution. These checks reduce stale writes but cannot provide atomic transactions across independent network servers. A timeout can mean an uncertain external outcome: inspect the server before retrying. Interrupted running jobs are not blindly replayed.
 
-Example Windows reservation request:
+Example Windows reservation API request body (the UI exposes equivalent form fields):
 
 ```json
 {"kind":"reservation","action":"create","scope_id":"192.0.2.0","ip":"192.0.2.10","mac":"00:11:22:33:44:55","name":"printer"}
@@ -165,6 +292,16 @@ For promotion or upgrade:
 5. Start, check readiness, log in, inspect inventory and reconcile external DNS/DHCP state. Re-enable provider writes only after reconciliation.
 
 Restoring MIPAM does not restore AD/DNS/DHCP. No cross-service rollback is implied.
+
+## Troubleshooting
+- **Cannot access the UI from another computer:** the default listener is loopback-only. Configure HTTPS and firewall access as described above; do not simply expose unencrypted HTTP.
+- **Service does not start:** check the configured paths, service-account permissions, port availability, TLS files and IdP configuration. On Linux, inspect `journalctl -u mipam`; on Windows, inspect `%ProgramData%\MIPAM\data\mipam.log` and service startup errors.
+- **Database already in use:** another MIPAM process owns the database lock. Stop that process before CLI bootstrap/backup. Do not remove lock/database files while a process is active.
+- **External login succeeds but access is denied:** verify exact group mappings and site grants. LDAP uses direct group membership only; disabled MIPAM accounts remain disabled.
+- **Ping scan fails:** verify that the OS `ping` command exists, the subnet allows scanning, and the service account has the required platform permissions. No-response alone is not an error or proof of availability.
+- **Provider write is denied:** confirm administrator access, provider `allow_writes`, connector allowlists/write settings if applicable, and support for the requested resource/action.
+- **SIEM queue grows or audited writes stop:** check collector TLS/authentication/acknowledgments and the service status. Restore delivery before the bounded queue fills; do not delete audit data to hide delivery failures.
+- **Backup fails:** verify the original key is available, storage permissions/free space, and the 128 MiB snapshot limit. A newly generated key cannot decrypt old backups.
 
 ## Development validation
 ```sh
