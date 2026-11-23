@@ -79,6 +79,8 @@ Download the matching archive and `SHA256SUMS` from the [v0.1.0 package director
 
 These are committed package files attached to the Git tag's tree; a GitHub Releases page is not required. This README may receive documentation improvements after the tag; the archived documentation remains the original release copy.
 
+**Known issue in the tagged Linux archives:** their `mipam.service` predates the ping-scanning capability fix, so ping scans fail with `probe errors` on hosts without unprivileged ICMP sockets. After installing from a 0.1.0 archive, either add the two capability lines described under [Linux/systemd](#linuxsystemd) to `/etc/systemd/system/mipam.service` (then `sudo systemctl daemon-reload && sudo systemctl restart mipam`), or rebuild packages from `main`. Nothing else in the archives is affected.
+
 To build new packages yourself, run from the repository root:
 
 ```sh
