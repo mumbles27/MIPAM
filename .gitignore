@@ -1,8 +1,12 @@
 /dist/
+/bin/
 /data/
+/config.json
 *.db
 *.db-shm
 *.db-wal
 *.key
 *.pem
 mipam.json
+*.exe
+*.log
