@@ -122,7 +122,7 @@ Paths:
 
 After reviewing configuration: `sudo systemctl enable --now mipam`. Logs: `journalctl -u mipam`. The service's systemd sandbox only permits writes under `/var/lib/mipam`; adjust it explicitly if storage paths change. `sudo bash uninstall.sh` removes the service registration but preserves binaries, accounts, configuration and data.
 
-Ping scanning requires the OS `ping` utility. With `NoNewPrivileges=true`, use kernel unprivileged ping sockets and configure `net.ipv4.ping_group_range` for the service group if required by your distribution; do not run the web service as root to make ping work.
+Ping scanning requires the OS `ping` utility. The unit keeps `NoNewPrivileges=true`, which strips `ping`'s `cap_net_raw` file capability, so the service is granted `AmbientCapabilities=CAP_NET_RAW` with a matching `CapabilityBoundingSet`. Without it, scans fail with `probe errors` on any host whose `net.ipv4.ping_group_range` is empty (the Ubuntu Server default), while interactive `ping` still works — so test scanning through the service, not from a shell. If you never use scanning, remove both capability lines; do not run the web service as root to make ping work. Where policy forbids granting the capability, the alternative is to widen `net.ipv4.ping_group_range` to include the `mipam` group so unprivileged ICMP sockets are available instead.
 
 ### Windows
 With the ZIP and `SHA256SUMS` in the current directory, verify the hash before extracting:
@@ -298,7 +298,7 @@ Restoring MIPAM does not restore AD/DNS/DHCP. No cross-service rollback is impli
 - **Service does not start:** check the configured paths, service-account permissions, port availability, TLS files and IdP configuration. On Linux, inspect `journalctl -u mipam`; on Windows, inspect `%ProgramData%\MIPAM\data\mipam.log` and service startup errors.
 - **Database already in use:** another MIPAM process owns the database lock. Stop that process before CLI bootstrap/backup. Do not remove lock/database files while a process is active.
 - **External login succeeds but access is denied:** verify exact group mappings and site grants. LDAP uses direct group membership only; disabled MIPAM accounts remain disabled.
-- **Ping scan fails:** verify that the OS `ping` command exists, the subnet allows scanning, and the service account has the required platform permissions. No-response alone is not an error or proof of availability.
+- **Ping scan fails:** verify that the OS `ping` command exists and the subnet allows scanning. If the job result reports `probe errors` rather than no-response results, the service lacks ICMP permission: on Linux confirm the unit still carries `AmbientCapabilities=CAP_NET_RAW` (custom or hardened units commonly drop it), or that `net.ipv4.ping_group_range` covers the service group. No-response alone is not an error or proof of availability.
 - **Provider write is denied:** confirm administrator access, provider `allow_writes`, connector allowlists/write settings if applicable, and support for the requested resource/action.
 - **SIEM queue grows or audited writes stop:** check collector TLS/authentication/acknowledgments and the service status. Restore delivery before the bounded queue fills; do not delete audit data to hide delivery failures.
 - **Backup fails:** verify the original key is available, storage permissions/free space, and the 128 MiB snapshot limit. A newly generated key cannot decrypt old backups.

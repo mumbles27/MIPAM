@@ -21,6 +21,12 @@ ProtectHome=true
 ReadWritePaths=/var/lib/mipam
 RestrictSUIDSGID=true
 LockPersonality=true
+# NoNewPrivileges=true strips ping's cap_net_raw file capability, and many
+# distributions ship an empty net.ipv4.ping_group_range, which together break
+# ping scanning. Grant only CAP_NET_RAW ambiently instead of relaxing the
+# sandbox or running as root. Remove both lines if scanning is never used.
+AmbientCapabilities=CAP_NET_RAW
+CapabilityBoundingSet=CAP_NET_RAW
 
 [Install]
 WantedBy=multi-user.target
