@@ -1,0 +1,26 @@
+[Unit]
+Description=MIPAM IP Address Management
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mipam
+Group=mipam
+WorkingDirectory=/var/lib/mipam
+EnvironmentFile=-/etc/mipam/secrets.env
+ExecStart=/opt/mipam/mipam -config /etc/mipam/mipam.json serve
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=75
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/mipam
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

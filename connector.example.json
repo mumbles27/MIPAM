@@ -1,0 +1,12 @@
+{
+  "listen": "127.0.0.1:8444",
+  "server": "dns-dhcp.example.internal",
+  "cert_file": "connector.crt",
+  "key_file": "connector.key",
+  "client_ca_file": "management-ca.crt",
+  "client_fingerprints": [],
+  "zones": ["example.internal"],
+  "scopes": ["192.0.2.0"],
+  "allow_writes": false,
+  "allow_directory": false
+}

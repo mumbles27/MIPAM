@@ -1,0 +1,65 @@
+{
+  "listen": "127.0.0.1:8080",
+  "public_url": "https://mipam.example.test",
+  "database": "data/mipam.db",
+  "backup_dir": "data/backups",
+  "backup_key_file": "data/backup.key",
+  "backup_hours": 24,
+  "backup_keep": 14,
+  "oidc": {
+    "issuer": "https://idp.example.test",
+    "client_id": "mipam",
+    "secret_env": "MIPAM_OIDC_SECRET",
+    "group_claim": "groups",
+    "group_roles": {"network-admins": "admin", "hq-operators": "operator"},
+    "group_sites": {"hq-operators": ["HQ"]}
+  },
+  "ldap": {
+    "url": "",
+    "base_dn": "DC=example,DC=test",
+    "bind_dn": "CN=mipam-reader,OU=Services,DC=example,DC=test",
+    "password_env": "MIPAM_LDAP_PASSWORD",
+    "group_roles": {"CN=IPAM Readers,OU=Groups,DC=example,DC=test": "viewer"},
+    "group_sites": {"CN=IPAM Readers,OU=Groups,DC=example,DC=test": ["HQ"]}
+  },
+  "saml": {
+    "metadata_file": "",
+    "certificate_file": "saml/sp.crt",
+    "key_file": "saml/sp.key",
+    "group_attribute": "groups",
+    "group_roles": {"network-admins": "admin"},
+    "group_sites": {}
+  },
+  "providers": [
+    {
+      "id": "ad",
+      "kind": "windows",
+      "url": "https://connector.example.test:8444",
+      "ca_file": "certs/connector-ca.crt",
+      "cert_file": "certs/mipam-client.crt",
+      "key_file": "certs/mipam-client.key",
+      "allow_writes": false
+    },
+    {
+      "id": "powerdns",
+      "kind": "powerdns",
+      "url": "https://dns-api.example.test",
+      "server": "localhost",
+      "secret_env": "MIPAM_POWERDNS_TOKEN",
+      "allow_writes": false
+    },
+    {
+      "id": "kea",
+      "kind": "kea",
+      "url": "https://kea-api.example.test",
+      "secret_env": "MIPAM_KEA_TOKEN",
+      "allow_writes": false
+    }
+  ],
+  "snmp": [
+    {"id": "switch-1", "host": "192.0.2.2", "user": "mipam", "auth_env": "MIPAM_SNMP_AUTH", "privacy_env": "MIPAM_SNMP_PRIVACY"}
+  ],
+  "siem_url": "https://siem.example.test/services/collector/event",
+  "siem_token_env": "MIPAM_SIEM_TOKEN",
+  "siem_queue_limit": 100000
+}

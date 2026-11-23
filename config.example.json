@@ -1,0 +1,30 @@
+{
+  "listen": "127.0.0.1:8080",
+  "database": "data/mipam.db",
+  "public_url": "http://127.0.0.1:8080",
+  "tls_cert": "",
+  "tls_key": "",
+  "backup_dir": "data/backups",
+  "backup_key_file": "data/backup.key",
+  "backup_hours": 24,
+  "backup_keep": 14,
+  "session_hours": 8,
+  "siem_url": "",
+  "siem_token_env": "MIPAM_SIEM_TOKEN",
+  "siem_queue_limit": 100000,
+  "oidc": {
+    "issuer": "",
+    "client_id": "",
+    "secret_env": "MIPAM_OIDC_SECRET",
+    "group_claim": "groups",
+    "group_roles": {}
+  },
+  "ldap": {
+    "url": "",
+    "base_dn": "",
+    "bind_dn": "",
+    "password_env": "MIPAM_LDAP_PASSWORD",
+    "group_roles": {}
+  },
+  "providers": []
+}

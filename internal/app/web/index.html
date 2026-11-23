@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MIPAM · Network inventory</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div id="login" class="login-shell">
+    <section class="login-card">
+      <div class="brand"><span class="brand-mark">M</span><span>MIPAM</span></div>
+      <h1>Your network.<br>Your source of truth.</h1>
+      <p class="muted">Address management, discovery, and controlled infrastructure changes.</p>
+      <form id="login-form">
+        <label>Username<input name="name" autocomplete="username" required></label>
+        <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
+        <label>Authentication<select name="method" id="login-method"><option value="local">Local account</option></select></label>
+        <button class="primary" type="submit">Sign in</button>
+      </form>
+      <div id="sso-links"></div>
+      <p class="muted small">First installation? Run <code>mipam bootstrap</code> on the server to create your administrator.</p>
+    </section>
+  </div>
+  <div id="shell" hidden>
+    <aside>
+      <div class="brand"><span class="brand-mark">M</span><span>MIPAM</span></div>
+      <p class="eyebrow">NETWORK WORKSPACE</p>
+      <nav>
+        <button data-page="networks" class="active">Subnets & addresses</button>
+        <button data-page="imports">Import & export</button>
+        <button data-page="integrations" data-admin>DNS & DHCP</button>
+        <button data-page="discovery" data-admin>Network discovery</button>
+        <button data-page="jobs">Activity & jobs</button>
+        <button data-page="audit" data-admin>Audit log</button>
+        <button data-page="admin" data-admin>Administration</button>
+      </nav>
+      <div class="sidebar-bottom"><span class="status-dot"></span> MIPAM 0.1 <span class="muted">· single node</span></div>
+    </aside>
+    <div class="workspace">
+      <header><span class="muted">Infrastructure / <strong id="breadcrumb">Subnets & addresses</strong></span><div><span id="identity"></span><button id="logout" class="quiet">Sign out</button></div></header>
+      <main>
+        <section id="page-networks" class="page">
+          <div class="title-row"><div><p class="eyebrow">ADDRESS SPACE</p><h1>Subnets & addresses</h1><p class="muted">A clear view of your network, one address at a time.</p></div><button id="add-subnet" class="primary" data-write>+ Create subnet</button></div>
+          <div class="stats" id="stats"></div>
+          <div class="network-layout">
+            <section class="panel subnet-panel"><div class="panel-heading"><h2>Your subnets</h2><button id="reload-subnets" class="quiet">Refresh</button></div><label class="search-label">Filter subnets<input id="subnet-search" placeholder="Name, site, or CIDR"></label><div id="subnet-list"></div></section>
+            <section class="panel address-panel">
+              <div id="empty-subnet" class="empty"><h2>Bring your network into view</h2><p>Create a subnet or import existing networks to begin.</p></div>
+              <div id="subnet-detail" hidden>
+                <div class="panel-heading"><div><h2 id="subnet-title"></h2><p class="muted" id="subnet-meta"></p></div><div class="actions"><button id="edit-subnet" data-write>Edit</button><button id="scan-subnet" data-write>Ping scan</button><button id="delete-subnet" class="danger" data-write>Delete</button></div></div>
+                <div id="legend" class="legend"></div>
+                <p class="muted small">Allocation and reachability are separate. Unknown is not free. DHCP observations are shown when explicitly linked to this subnet.</p>
+                <div class="actions"><label>Start address<input id="grid-start" placeholder="First address"></label><button id="jump-grid">Go</button><button id="add-address" data-write>Add address</button></div>
+                <div id="address-grid" class="address-grid"></div>
+                <div class="panel-footer"><span id="grid-caption" class="muted"></span><button id="next-grid">Next page →</button></div>
+              </div>
+            </section>
+          </div>
+        </section>
+        <section id="page-imports" class="page" hidden>
+          <p class="eyebrow">ONBOARDING</p><h1>Import & export</h1><p class="muted">Preview first. Imports are atomic and never change your DHCP or DNS servers.</p>
+          <div class="panel form-panel"><h2>Import subnets</h2><p>CSV columns: <code>name,cidr,site,vrf,vlan,description</code>. JSON accepts an array of subnet objects. Existing/overlapping subnets are rejected.</p><label>Choose CSV or JSON<input type="file" id="import-file" accept=".csv,.json"></label><label>Import data<textarea id="import-data" rows="9" placeholder="name,cidr,site&#10;Office,192.0.2.0/24,HQ"></textarea></label><div class="actions"><button id="preview-import" class="primary" data-write>Validate & preview</button><button id="apply-import" disabled data-write>Apply import</button><a href="/api/export" class="button">Export inventory JSON</a></div><pre id="import-result"></pre></div>
+        </section>
+        <section id="page-integrations" class="page" hidden>
+          <p class="eyebrow">CONNECTED INFRASTRUCTURE</p><h1>DNS & DHCP</h1><p class="muted">Read provider state, then preview and confirm a controlled change.</p>
+          <div class="panel form-panel">
+            <div id="provider-info"></div>
+            <form id="provider-form">
+              <div class="form-grid">
+                <label>Provider<select name="provider" id="provider-select" required></select></label>
+                <label>Link DHCP reads to inventory subnet<select name="link_subnet" id="provider-subnet"><option value="">Do not link</option></select></label>
+                <label>Resource<select name="kind"><option value="dns">DNS record</option><option value="scope">DHCP scope</option><option value="reservation">DHCP reservation</option><option value="lease">DHCP leases (read)</option><option value="ad-computer">AD computers (read)</option></select></label>
+                <label>Action<select name="action"><option value="read">Read / synchronize</option><option value="create">Create</option><option value="update">Update</option><option value="delete">Delete</option></select></label>
+                <label>Zone<input name="zone" placeholder="example.internal"></label>
+                <label>Name<input name="name" placeholder="host01"></label>
+                <label>Record type<select name="type"><option value="">Not applicable</option><option>A</option><option>AAAA</option><option>CNAME</option><option>PTR</option><option>TXT</option><option>MX</option><option>SRV</option></select></label>
+                <label>Record content<input name="content"></label><label>TTL seconds<input name="ttl" type="number" value="3600" min="1"></label>
+                <label>Windows scope ID<input name="scope_id" placeholder="192.0.2.0"></label><label>Kea subnet ID<input name="subnet_id" type="number" min="0" value="0"></label>
+                <label>Reservation IP<input name="ip"></label><label>Client MAC<input name="mac"></label>
+                <label>New scope CIDR<input name="cidr" placeholder="192.0.2.0/24"></label><label>Start range<input name="start"></label><label>End range<input name="end"></label>
+              </div>
+              <button class="primary">Read or preview change</button>
+            </form>
+            <button id="confirm-provider" class="danger" hidden>Confirm external change</button><button id="import-scopes" hidden>Prepare scope import</button><pre id="provider-result"></pre>
+          </div>
+          <div class="panel form-panel"><h2>Provider snapshots</h2><p class="muted">Snapshots do not imply that a provider is currently reachable.</p><button id="load-observations">Refresh snapshots</button><pre id="observations"></pre></div>
+        </section>
+        <section id="page-discovery" class="page" hidden>
+          <p class="eyebrow">NETWORK CONTEXT</p><h1>Network discovery</h1>
+          <div class="panel form-panel"><h2>LLDP / CDP tables</h2><p class="muted">Collect neighbor MIB tables using SNMPv3 SHA-256/AES authPriv. Devices and secret references must be allowlisted in the server configuration. Raw indexed OIDs are retained; endpoint-to-port correlation is not yet automatic.</p><form id="neighbor-form"><label>Configured device ID<input name="device" required></label><button class="primary">Collect neighbors</button></form><pre id="neighbors"></pre></div>
+        </section>
+        <section id="page-jobs" class="page" hidden><div class="title-row"><div><p class="eyebrow">OPERATIONS</p><h1>Activity & jobs</h1></div><button id="reload-jobs">Refresh</button></div><div class="panel" id="jobs"></div></section>
+        <section id="page-audit" class="page" hidden><div class="title-row"><div><p class="eyebrow">ACCOUNTABILITY</p><h1>Audit log</h1></div><button id="reload-audit">Refresh</button></div><div class="panel" id="audit"></div></section>
+        <section id="page-admin" class="page" hidden>
+          <p class="eyebrow">CONTROL CENTER</p><h1>Administration</h1>
+          <div class="panel form-panel"><h2>Backups & service status</h2><button id="backup" class="primary">Create encrypted backup</button><pre id="service-status"></pre><p class="muted">Restore is an offline CLI operation into a new staging directory. Keep the backup key separately; restoring inventory never rolls external servers backward.</p></div>
+          <div class="panel form-panel"><h2>Users & scoped roles</h2><div id="users"></div><form id="user-form"><input name="id" type="hidden"><div class="form-grid"><label>Username<input name="name" required></label><label>Password (new local users only)<input name="password" type="password" minlength="14" autocomplete="new-password"></label><label>Role<select name="role"><option value="viewer">Viewer</option><option value="operator">Network operator</option><option value="auditor">Auditor</option><option value="admin">Administrator</option></select></label><label>Allowed sites (comma-separated)<input name="sites" placeholder="HQ, Branch"></label><label class="check"><input name="disabled" type="checkbox"> Disabled</label></div><button class="primary">Save user</button><button id="reset-user" type="button">New user</button></form><p class="muted">Administrators have global access. Other users need explicit site grants. External identities refresh their configured group grants at login.</p></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <dialog id="subnet-dialog"><form id="subnet-form"><div class="title-row"><h2 id="subnet-form-title">Create subnet</h2><button type="button" data-close="subnet-dialog">×</button></div><input name="id" type="hidden"><input name="version" type="hidden"><div class="form-grid"><label>Name<input name="name" required maxlength="200"></label><label>CIDR<input name="cidr" required placeholder="192.0.2.0/24"></label><label>Site<input name="site" required value="HQ"></label><label>Routing domain / VRF<input name="vrf" placeholder="default"></label><label>VLAN<input name="vlan" type="number" min="0" max="4094" value="0"></label><label class="check"><input name="scan_enabled" type="checkbox"> Allow explicit ping scans</label></div><label>Description<textarea name="description" rows="3"></textarea></label><p class="muted small">This creates inventory only. Use DNS & DHCP to provision an external scope.</p><button class="primary">Save subnet</button></form></dialog>
+  <dialog id="address-dialog"><form id="address-form"><div class="title-row"><h2>Address details</h2><button type="button" data-close="address-dialog">×</button></div><input name="version" type="hidden"><label>IP address<input name="ip" required></label><div class="form-grid"><label>Hostname<input name="hostname"></label><label>MAC address<input name="mac"></label><label>Inventory allocation<select name="state"><option value="unknown">Unknown</option><option value="available">Available (manually confirmed)</option><option value="static">Static</option><option value="reserved">Reserved (inventory)</option><option value="excluded">Excluded</option><option value="conflict">Conflict</option></select></label></div><label>Notes<textarea name="note" rows="3"></textarea></label><p id="address-observation" class="muted"></p><div class="actions"><button class="primary" data-write>Save inventory</button><button id="delete-address" class="danger" type="button" data-write>Remove inventory</button></div></form></dialog>
+  <div id="notice" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

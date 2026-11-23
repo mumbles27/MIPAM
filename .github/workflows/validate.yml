@@ -1,0 +1,55 @@
+name: Validate
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go test -timeout 180s ./...
+      - run: go vet ./...
+      - run: go build ./cmd/...
+      - name: Parse Windows installers
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Get-ChildItem packaging/windows/*.ps1 | ForEach-Object {
+            $tokens = $null; $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count) { throw ($errors | Out-String) }
+          }
+  linux-hardening:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go test -race -timeout 180s ./...
+      - run: bash -n packaging/linux/*.sh
+      - run: go run github.com/mxschmitt/playwright-go/cmd/playwright@v0.6401.0 install --with-deps chromium
+      - run: go test -tags browser -run TestBrowserWorkflow -timeout 120s ./internal/app
+      - run: go run ./tools/package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mipam-evaluation-packages
+          path: dist/release/*
+  vulnerabilities:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      # Intentionally fails while GO-2026-6909 remains unresolved.
+      - run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
