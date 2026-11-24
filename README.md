@@ -20,7 +20,8 @@ Go-based, single-node IP address management with an embedded web interface and S
 - [Backup, restore and upgrades](#backup-restore-and-upgrades)
 - [Troubleshooting](#troubleshooting)
 - [Development validation](#development-validation)
-- [Remaining release work](#remaining-release-work)
+- [Release history](CHANGELOG.md)
+- [Roadmap](ROADMAP.md)
 
 ## Implemented capabilities
 - Subnet/address CRUD, VRFs, sites, VLANs, IPv4 grids, sparse IPv6, optimistic concurrency and overlap validation.
@@ -317,5 +318,7 @@ go test -tags browser -run TestBrowserWorkflow -timeout 120s ./internal/app
 
 Browser tests exercise login, subnet creation, address editing, import preview/apply, responsive layout and logout. Screenshots are written to `dist/verification/`. Provider tests use mock HTTP servers; they are not live AD/Kea/PowerDNS/BIND certification. CI defines native Linux/Windows unit tests and Linux browser/race/build jobs, but must be run on the repository host before claiming CI success.
 
-## Remaining release work
-Besides the boundaries above: resolve the SAML advisory, live IdP/AD/DNS/DHCP/SNMP/SIEM certification, native installer/service acceptance, fine-grained provider RBAC, full DHCP options/exclusions, topology correlation, complete import/recovery UX, load testing, retention and secret-rotation operations. DEB/RPM/MSI, container deployment, signed artifacts and automated upgrade orchestration are not included in this build.
+## Release history and roadmap
+Per-release changes, including upgrade steps, are recorded in [CHANGELOG.md](CHANGELOG.md).
+
+Planned work and the criteria that still block a production-ready claim are in [ROADMAP.md](ROADMAP.md). In short: the SAML advisory is unresolved, neither installer has a native end-to-end acceptance pass, and no integration has been certified against a live system. The boundaries described throughout this README are the current state, not temporary omissions awaiting a patch.
