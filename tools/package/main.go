@@ -55,7 +55,8 @@ func build() error {
 		if err := os.Mkdir(dir, 0755); err != nil {
 			return err
 		}
-		files := []entry{{"README.md", "README.md", 0644}, {"config.example.json", "config.example.json", 0644},
+		files := []entry{{"README.md", "README.md", 0644}, {"CHANGELOG.md", "CHANGELOG.md", 0644},
+			{"ROADMAP.md", "ROADMAP.md", 0644}, {"config.example.json", "config.example.json", 0644},
 			{"integrations.example.json", "integrations.example.json", 0644},
 			{"subnets.example.csv", "examples/subnets.csv", 0644}}
 		commands := []string{"mipam"}

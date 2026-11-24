@@ -3,6 +3,14 @@ All notable changes to MIPAM are recorded here. Versions follow [semantic versio
 
 Every release so far is an **unsigned evaluation build**. None has been certified for production use. See [ROADMAP.md](ROADMAP.md) for what has to be true before that claim can be made.
 
+## [0.2.1] — 2026-11-24
+Documentation release. No code behaviour changed; the binaries differ from 0.2.0 only in their reported version string. There is no need to upgrade an installed 0.2.0 host.
+
+### Added
+- This changelog and [ROADMAP.md](ROADMAP.md), neither of which existed before. The roadmap organizes outstanding work into milestones with completion criteria and states the conditions that must hold before MIPAM can stop calling itself an evaluation build.
+- A summary of the current release and the planned work at the top of the README.
+- `CHANGELOG.md` and `ROADMAP.md` are now included in the release archives. Previously they existed only in the repository, so anyone working from an extracted package had no release history or forward plan to read.
+
 ## [0.2.0] — 2026-11-23
 Bug-fix release. The headline item is a defect that made a shipped feature fail completely on a default Linux host.
 
@@ -46,5 +54,6 @@ Initial evaluation release.
 ### Known issues
 - Ping scanning is broken in the Linux archives for this version. Fixed in 0.2.0; see the upgrade note above.
 
+[0.2.1]: https://github.com/mumbles27/MIPAM/releases/tag/v0.2.1
 [0.2.0]: https://github.com/mumbles27/MIPAM/releases/tag/v0.2.0
 [0.1.0]: https://github.com/mumbles27/MIPAM/releases/tag/v0.1.0
