@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
+	"mipam/internal/version"
 )
 
 func sortAddresses(a []Address) {
@@ -344,5 +345,5 @@ func (a *Server) status(w http.ResponseWriter, r *http.Request) {
 		a.internal(w, err)
 		return
 	}
-	respond(w, 200, map[string]any{"siem_pending": queue, "jobs_pending": jobs, "backup_hours": a.C.BackupHours, "version": "0.1.0", "storage": "SQLite", "provider_writes": "admin-only, explicit preview and confirmation"})
+	respond(w, 200, map[string]any{"siem_pending": queue, "jobs_pending": jobs, "backup_hours": a.C.BackupHours, "version": version.Version, "storage": "SQLite", "provider_writes": "admin-only, explicit preview and confirmation"})
 }

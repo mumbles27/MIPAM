@@ -17,9 +17,11 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	mipam "mipam/internal/version"
 )
 
-const version = "0.1.0"
+const version = mipam.Version
 
 type entry struct {
 	name, source string

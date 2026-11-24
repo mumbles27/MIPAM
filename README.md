@@ -1,7 +1,7 @@
 # MIPAM
 Go-based, single-node IP address management with an embedded web interface and SQLite. No Node.js or external database is needed at runtime.
 
-**0.1.0 is an evaluation build, not a production-certified release.** The SAML dependency is flagged by [GO-2026-6909](https://pkg.go.dev/vuln/GO-2026-6909), with no fixed version listed. Keep SAML disabled in production; local login, OIDC and LDAPS are alternatives. The vulnerability CI job intentionally fails rather than suppressing this advisory. Source inspection and a namespace regression test do not constitute advisory clearance.
+**0.2.0 is an evaluation build, not a production-certified release.** The SAML dependency is flagged by [GO-2026-6909](https://pkg.go.dev/vuln/GO-2026-6909), with no fixed version listed. Keep SAML disabled in production; local login, OIDC and LDAPS are alternatives. The vulnerability CI job intentionally fails rather than suppressing this advisory. Source inspection and a namespace regression test do not constitute advisory clearance.
 
 ## Contents
 - [Features](#implemented-capabilities)
@@ -62,7 +62,7 @@ Copy-Item config.example.json mipam.json
 .\dist\mipam.exe -config mipam.json serve
 ```
 
-Copy the example configuration only for a new installation; do not overwrite an existing `mipam.json`. These source commands build the checked-out branch. Use the tagged packages below for the fixed 0.1.0 evaluation build.
+Copy the example configuration only for a new installation; do not overwrite an existing `mipam.json`. These source commands build the checked-out branch. Use the tagged packages below for the fixed 0.2.0 evaluation build.
 
 Open **http://127.0.0.1:8080** and sign in as `admin` with the password entered at bootstrap. The password prompt is hidden; there is no default password. Passwords must be 14–72 bytes. For automation, inject `MIPAM_BOOTSTRAP_PASSWORD` using your secret manager and remove it afterward. Do not put passwords in command arguments or source files.
 
@@ -71,15 +71,15 @@ For an extracted binary package, use `./mipam` (Linux) or `.\mipam.exe` (Windows
 Only one process may open a database. Stop the service before CLI bootstrap or backup; the web backup action works while the service is running. Keep SQLite on local storage, not NFS/SMB. Do not run multiple replicas against it.
 
 ## Deployment packages
-Download the matching archive and `SHA256SUMS` from the [v0.1.0 package directory](https://github.com/mumbles27/MIPAM/tree/v0.1.0/dist/release):
-- [Linux amd64 archive](https://github.com/mumbles27/MIPAM/raw/refs/tags/v0.1.0/dist/release/mipam-0.1.0-linux-amd64.tar.gz)
-- [Linux arm64 archive](https://github.com/mumbles27/MIPAM/raw/refs/tags/v0.1.0/dist/release/mipam-0.1.0-linux-arm64.tar.gz)
-- [Windows amd64 archive](https://github.com/mumbles27/MIPAM/raw/refs/tags/v0.1.0/dist/release/mipam-0.1.0-windows-amd64.zip)
-- [SHA256SUMS](https://github.com/mumbles27/MIPAM/raw/refs/tags/v0.1.0/dist/release/SHA256SUMS)
+Download the matching archive and `SHA256SUMS` from the [v0.2.0 package directory](https://github.com/mumbles27/MIPAM/tree/v0.2.0/dist/release):
+- [Linux amd64 archive](https://github.com/mumbles27/MIPAM/raw/refs/tags/v0.2.0/dist/release/mipam-0.2.0-linux-amd64.tar.gz)
+- [Linux arm64 archive](https://github.com/mumbles27/MIPAM/raw/refs/tags/v0.2.0/dist/release/mipam-0.2.0-linux-arm64.tar.gz)
+- [Windows amd64 archive](https://github.com/mumbles27/MIPAM/raw/refs/tags/v0.2.0/dist/release/mipam-0.2.0-windows-amd64.zip)
+- [SHA256SUMS](https://github.com/mumbles27/MIPAM/raw/refs/tags/v0.2.0/dist/release/SHA256SUMS)
 
-These are committed package files attached to the Git tag's tree; a GitHub Releases page is not required. This README may receive documentation improvements after the tag; the archived documentation remains the original release copy.
+These are committed package files attached to the Git tag's tree, and the same archives are attached to the GitHub prerelease. This README may receive documentation improvements after the tag; the archived documentation remains the original release copy.
 
-**Known issue in the tagged Linux archives:** their `mipam.service` predates the ping-scanning capability fix, so ping scans fail with `probe errors` on hosts without unprivileged ICMP sockets. After installing from a 0.1.0 archive, either add the two capability lines described under [Linux/systemd](#linuxsystemd) to `/etc/systemd/system/mipam.service` (then `sudo systemctl daemon-reload && sudo systemctl restart mipam`), or rebuild packages from `main`. Nothing else in the archives is affected.
+**Upgrading from 0.1.0:** the 0.1.0 Linux archives shipped a `mipam.service` that broke ping scanning with `probe errors` on hosts without unprivileged ICMP sockets. 0.2.0 fixes the packaged unit, but upgrading only replaces the binary — `install.sh` refuses existing installations and never rewrites your unit. Add the two capability lines described under [Linux/systemd](#linuxsystemd) to `/etc/systemd/system/mipam.service`, then run `sudo systemctl daemon-reload && sudo systemctl restart mipam`. No data or configuration change is required.
 
 To build new packages yourself, run from the repository root:
 
@@ -88,9 +88,9 @@ go run ./tools/package
 ```
 
 Produces unsigned archives under `dist/release/`:
-- `mipam-0.1.0-linux-amd64.tar.gz`
-- `mipam-0.1.0-linux-arm64.tar.gz`
-- `mipam-0.1.0-windows-amd64.zip` (includes the Windows connector)
+- `mipam-0.2.0-linux-amd64.tar.gz`
+- `mipam-0.2.0-linux-arm64.tar.gz`
+- `mipam-0.2.0-windows-amd64.zip` (includes the Windows connector)
 - `SHA256SUMS`
 
 Each archive includes configuration examples, install/uninstall scripts, a CSV template and a CycloneDX 1.5 component inventory generated from each binary's linked Go modules. This is a basic SBOM, not a license audit, provenance attestation or full dependency graph. Checksums detect corruption; these artifacts are **not signed**.
@@ -103,8 +103,8 @@ Example for amd64, with the archive and checksum file in the current directory:
 ```sh
 sha256sum --check --ignore-missing SHA256SUMS
 # Continue only if verification succeeds.
-tar -xzf mipam-0.1.0-linux-amd64.tar.gz
-cd mipam-0.1.0-linux-amd64
+tar -xzf mipam-0.2.0-linux-amd64.tar.gz
+cd mipam-0.2.0-linux-amd64
 sudo bash install.sh
 ```
 
@@ -130,7 +130,7 @@ Ping scanning requires the OS `ping` utility. The unit keeps `NoNewPrivileges=tr
 With the ZIP and `SHA256SUMS` in the current directory, verify the hash before extracting:
 
 ```powershell
-$Archive = 'mipam-0.1.0-windows-amd64.zip'
+$Archive = 'mipam-0.2.0-windows-amd64.zip'
 $ChecksumLine = Get-Content .\SHA256SUMS | Where-Object { $_.EndsWith("  $Archive") }
 if (@($ChecksumLine).Count -ne 1) { throw 'Expected exactly one checksum entry.' }
 $Expected = ($ChecksumLine -split '\s+')[0]
@@ -138,7 +138,7 @@ if ((Get-FileHash $Archive -Algorithm SHA256).Hash -ne $Expected) {
     throw 'Checksum mismatch. Do not install this archive.'
 }
 Expand-Archive -Path $Archive -DestinationPath .\mipam-extracted
-Set-Location .\mipam-extracted\mipam-0.1.0-windows-amd64
+Set-Location .\mipam-extracted\mipam-0.2.0-windows-amd64
 ```
 
 Review the extracted scripts, then run `.\Install.ps1` from that directory in an elevated PowerShell session. Follow your organization's script-signing policy; no execution-policy bypass is required or recommended. Defaults:

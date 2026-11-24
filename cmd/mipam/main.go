@@ -21,6 +21,7 @@ import (
 	"golang.org/x/term"
 	"mipam/internal/app"
 	"mipam/internal/logging"
+	"mipam/internal/version"
 )
 
 type program struct {
@@ -80,7 +81,7 @@ func run() error {
 		action = flag.Arg(0)
 	}
 	if action == "version" {
-		fmt.Println("MIPAM 0.1.0")
+		fmt.Println("MIPAM " + version.Version)
 		return nil
 	}
 	c, err := app.LoadConfig(*configPath)
