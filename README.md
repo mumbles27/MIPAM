@@ -4,6 +4,7 @@ Go-based, single-node IP address management with an embedded web interface and S
 **0.2.0 is an evaluation build, not a production-certified release.** The SAML dependency is flagged by [GO-2026-6909](https://pkg.go.dev/vuln/GO-2026-6909), with no fixed version listed. Keep SAML disabled in production; local login, OIDC and LDAPS are alternatives. The vulnerability CI job intentionally fails rather than suppressing this advisory. Source inspection and a namespace regression test do not constitute advisory clearance.
 
 ## Contents
+- [What's new in 0.2.0](#whats-new-in-020)
 - [Features](#implemented-capabilities)
 - [Requirements](#requirements)
 - [Run from source](#run-locally)
@@ -22,6 +23,22 @@ Go-based, single-node IP address management with an embedded web interface and S
 - [Development validation](#development-validation)
 - [Release history](CHANGELOG.md)
 - [Roadmap](ROADMAP.md)
+
+## What's new in 0.2.0
+Released 2026-11-23 as an [unsigned evaluation prerelease](https://github.com/mumbles27/MIPAM/releases/tag/v0.2.0). This is a bug-fix release.
+
+**Ping scanning was completely broken in 0.1.0 when MIPAM ran as the packaged Linux service.** Every probe returned `probe errors` instead of a reachability result, so the feature produced no usable data on an installed host. The hardened unit's `NoNewPrivileges=true` strips `ping`'s `cap_net_raw` file capability, and distributions such as Ubuntu Server ship an empty `net.ipv4.ping_group_range`, so no unprivileged ICMP socket was available either. The unit now grants `AmbientCapabilities=CAP_NET_RAW` with a matching `CapabilityBoundingSet`, leaving the rest of the sandbox intact.
+
+The defect was invisible from a shell, where `ping` works normally on an affected host. Verify scanning through the service, not interactively.
+
+Also in this release: the version string is now a single `internal/version` constant instead of three hard-coded copies, and the Linux deployment documentation no longer recommends the unprivileged-socket approach that does not work by default.
+
+**Running 0.1.0?** Replacing the binary alone will not fix scanning — see [Upgrading from 0.1.0](#deployment-packages) for the two lines to add to your unit. Full details are in the [changelog](CHANGELOG.md).
+
+### What comes next
+The [roadmap](ROADMAP.md) weights the next cycle toward deployment acceptance and release integrity rather than features, because this release exposed two process gaps: a defect that only appeared in the packaged service, and published archives that had drifted from fixed source. 0.3.0 therefore covers end-to-end installer acceptance testing on both platforms, building release artifacts from the tag in CI, artifact signing, and a regression guard for the packaged unit. It also includes determining whether the Windows `LocalService` identity has the same ICMP restriction — the Linux fix does not transfer, and that path is untested.
+
+Provider completeness (Windows DHCP options, exclusions and activation, DHCPv6, Kea scope writes, additional DNS record types) is 0.4.0. Directory depth, backup scale, schema migrations and load testing are 0.5.0. MIPAM will keep describing itself as an evaluation build until the SAML advisory is resolved, both installers have a native acceptance pass, and each integration has been certified against a live system rather than a mock.
 
 ## Implemented capabilities
 - Subnet/address CRUD, VRFs, sites, VLANs, IPv4 grids, sparse IPv6, optimistic concurrency and overlap validation.
